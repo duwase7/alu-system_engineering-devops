@@ -1,3 +1,4 @@
 #!/usr/bin/env bash
-#this bash script connects to an ssh portal using a key found at the specified file
+# Connects to the server using the private key located at ~/.ssh/school
+
 ssh -i ~/.ssh/school ubuntu@54.166.191.144
