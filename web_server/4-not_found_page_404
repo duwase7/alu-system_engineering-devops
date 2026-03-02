@@ -1,21 +1,29 @@
 #!/usr/bin/env bash
-# Install nginx and configure a custom 404 page
+# Configure nginx with a custom 404 page
 
-apt-get update -y
-apt-get install nginx -y
+set -e
 
-echo "Holberton School for the win!" > /var/www/html/index.html
+apt-get update
+apt-get install -y nginx
+
+
+echo "Holberton School" > /var/www/html/index.html
+
 echo "Ceci n'est pas une page" > /var/www/html/404.html
 
-cat > /etc/nginx/sites-available/default <<EOF
+cat > /etc/nginx/sites-available/default << 'EOF'
 server {
     listen 80 default_server;
     listen [::]:80 default_server;
 
     root /var/www/html;
-    index index.html index.htm;
+    index index.html;
 
     server_name _;
+
+    location /redirect_me {
+        return 301 https://www.youtube.com/watch?v=QH2-TGUlwu4;
+    }
 
     error_page 404 /404.html;
 
@@ -24,9 +32,10 @@ server {
     }
 
     location / {
-        try_files \$uri \$uri/ =404;
+        try_files $uri $uri/ =404;
     }
 }
 EOF
 
+nginx -t
 service nginx restart
