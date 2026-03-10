@@ -1,13 +1,37 @@
 #!/usr/bin/env bash
-# Configure nginx with custom HTTP header X-Served-By
+# Install and configure HAProxy load balancer
 
 apt-get update -y
-apt-get install -y nginx
+apt-get install -y haproxy
 
-HOSTNAME=$(hostname)
+echo "ENABLED=1" >> /etc/default/haproxy
 
-echo "Holberton School" > /var/www/html/index.html
+cat <<EOF > /etc/haproxy/haproxy.cfg
+global
+    log 127.0.0.1 local0
+    maxconn 2000
+    user haproxy
+    group haproxy
 
-sed -i "/server_name _;/a add_header X-Served-By $HOSTNAME;" /etc/nginx/sites-available/default
+defaults
+    log global
+    mode http
+    option httplog
+    option dontlognull
+    retries 3
+    option redispatch
+    timeout connect 5000
+    timeout client 50000
+    timeout server 50000
 
-systemctl restart nginx
+frontend http_front
+    bind *:80
+    default_backend http_back
+
+backend http_back
+    balance roundrobin
+    server web-01 100.24.45.229:80 check
+    server web-02 WEB02_IP:80 check
+EOF
+
+service haproxy restart
