@@ -17,8 +17,8 @@ frontend frontend_cluster
 
 backend backend_cluster
     balance roundrobin
-    server 6999-web-01 100.24.45.229 check
-    server 6999-web-02 32.192.229.194 check
+    server 6999-web-01 100.24.45.229:80 check
+    server 6999-web-02 32.192.229.194:80 check
 EOF
 
 sudo service haproxy restart
