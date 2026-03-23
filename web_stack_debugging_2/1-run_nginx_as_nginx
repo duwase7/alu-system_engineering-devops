@@ -1,19 +1,32 @@
 #!/usr/bin/env bash
-# Configure nginx to run as nginx user and listen on port 8080
+# Configure nginx to run as nginx user on port 8080
 
-# Create nginx user if it doesn't exist
-id nginx &>/dev/null || useradd -r -s /usr/sbin/nologin nginx
+NGINX_BIN="/usr/sbin/nginx"
+NGINX_CONF="/etc/nginx/nginx.conf"
+NGINX_USER="nginx"
 
-# Force nginx to use nginx user
-sed -i 's/^user .*/user nginx;/' /etc/nginx/nginx.conf
+# Ensure nginx user exists
+id "$NGINX_USER" &>/dev/null || useradd -r -s /sbin/nologin "$NGINX_USER"
 
-# Ensure correct port in ALL configs
-sed -i 's/listen 80;/listen 8080;/g' /etc/nginx/sites-available/default
-sed -i 's/listen \[::\]:80;/listen [::]:8080;/g' /etc/nginx/sites-available/default
-sed -i 's/listen 80 default_server;/listen 8080 default_server;/g' /etc/nginx/sites-available/default
+# Fix nginx main config: enforce user
+sed -i "s/^user .*/user $NGINX_USER;/" "$NGINX_CONF"
 
-# Stop nginx completely
+# Ensure it listens on all interfaces on 8080
+if [ -f /etc/nginx/sites-available/default ]; then
+    sed -i 's/listen 80;/listen 0.0.0.0:8080;/g' /etc/nginx/sites-available/default
+    sed -i 's/listen \[::\]:80;/listen [::]:8080;/g' /etc/nginx/sites-available/default
+fi
+
+# Fix permissions (critical for non-root execution)
+mkdir -p /var/log/nginx /var/lib/nginx /run
+chown -R "$NGINX_USER:$NGINX_USER" /var/log/nginx /var/lib/nginx /run
+
+# Stop any running nginx
 pkill nginx 2>/dev/null
+sleep 1
 
-# Start nginx properly (as root)
-nginx
+# Run nginx completely as nginx user (NOT root)
+su -s /bin/sh -c "$NGINX_BIN -c $NGINX_CONF" "$NGINX_USER"
+
+# Verify nginx is running as nginx user
+pgrep -u nginx -a nginx
