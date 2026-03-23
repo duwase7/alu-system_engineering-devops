@@ -1,0 +1,5 @@
+#!/usr/bin/env bash
+# debuggind made short
+apt-get install -y nginx > /dev/null 2>&1
+nginx
+rm /run/nginx.pid
